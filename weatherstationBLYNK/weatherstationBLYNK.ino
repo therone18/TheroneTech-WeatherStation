@@ -1,37 +1,36 @@
+
+
+// Blynk Connection Details Definition
 #define BLYNK_TEMPLATE_ID "TMPL6Uainf7Cg"
 #define BLYNK_TEMPLATE_NAME "Weather Station"
 #define BLYNK_AUTH_TOKEN "RnGgbFRHwYjvzF-gZq3ZxIKn9xWOAaUs"
 
+
+//Required Package Declaration
 #include <WiFi.h>
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <DHT.h>
 #include <BlynkSimpleEsp32.h>
 
-char ssid[] = "************";
-char pass[] = "**************";
+char ssid[] = "************"; //WIFI SSID (Redacted in public view for privacy reasons)
+char pass[] = "**************"; //WIFI Password (Redacted in public view for privacy reasons)
 
 BlynkTimer timer;
 
 #define DHT_PIN 4           // Pin where the DHT11 is connected
 #define WATER_LEVEL_PIN 36  // Pin where the Water Level sensor is connected
-#define LCD_RS 12
-#define LCD_EN 11
-#define LCD_D4 5
-#define LCD_D5 4
-#define LCD_D6 3
-#define LCD_D7 2
 
-DHT dht(DHT_PIN, DHT11);
-//LiquidCrystal lcd(22, 23, 5, 18, 19, 21);
-//LiquidCrystal lcd(22, 23, 25, 32, 35, 34);
-LiquidCrystal lcd(22, 23, 14, 27, 26, 25);
+DHT dht(DHT_PIN, DHT11); // DHT11 Pin Configuration
 
-float humidity;
-float temperature;int waterLevel;
-int selectedOption;
+LiquidCrystal lcd(22, 23, 14, 27, 26, 25); //LCD Pin Configuration
 
-void sendSensor()
+float humidity; //Global humidity value
+float temperature; //Global temperature value
+int waterLevel; //Global water level value
+int selectedOption;  //Selected Option value
+
+void sendSensor() //Sensor send to Blynk App
 {
 
   Blynk.virtualWrite(V1, waterLevel);
@@ -44,58 +43,60 @@ void sendSensor()
 
 void setup() {
 
-  // Connect to Wi-Fi
-  connectToWiFi();
-  Serial.begin(115200);
+  
+  connectToWiFi(); // Connect to Wi-Fi
+  Serial.begin(115200); //Begin serial transmission for debugging purposes
 
   
 
-  // Initialize Blynk
-  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass); // Initialize Blynk
 
-  // Initialize Sensor Data Send Stream 
-  timer.setInterval(100L, sendSensor);
+  
+  timer.setInterval(100L, sendSensor); // Initialize Sensor Data Send Stream 
   
 
 }
 
-BLYNK_WRITE(V0){
+BLYNK_WRITE(V0){ // Blynk write send for Temperature / Humidity / Water Level option selection
   lcd.clear();
   int optionsSliderPin = param.asInt();
 
   selectedOption = param.asInt();
 
-
-  //lcd.print(optionsSliderPin);
 }
 
-BLYNK_WRITE(V4){
+BLYNK_WRITE(V4){ //Blynk write send for ALl OPTION option selection
   lcd.clear();
-  //int optionsSliderPin = param.asInt();
 
   selectedOption = 4;
 
 
-  //lcd.print(optionsSliderPin);
-}
 
 void loop() {
   
+  
   humidity = dht.readHumidity();
-  temperature = dht.readTemperature(); // or dht.readTemperature(true) for Fahrenheit
+  temperature = dht.readTemperature();        //Continous Sensor Read
   waterLevel = analogRead(WATER_LEVEL_PIN);
-  lcd.clear();
-  if(selectedOption == 1){
+
+
+
+  lcd.clear(); // Clear Currently Showing LCD Characters
+
+
+
+  if(selectedOption == 1){  //Water Level Option (Slider to the Left)
     lcd.print("WL ");
     lcd.print(waterLevel);
-  }else if(selectedOption == 2){
+  }else if(selectedOption == 2){ //Temperature Option (Slider to the Middle)
     lcd.print("T: ");
     lcd.print(temperature);
     lcd.print("C");
-  }else if (selectedOption ==3){
+  }else if (selectedOption ==3){   //Humidity Option (Slider to the Right)
     lcd.print("Hum:  ");
     lcd.print(humidity);
-  } else {
+  } else { //ALL OPTIONS Option (Middle button pressed)
     lcd.print(waterLevel);
     lcd.print(" ");
     lcd.print(temperature);
@@ -105,38 +106,31 @@ void loop() {
   }
 
 
-  
-  //lcd.print(selectedOption);
 
-  
+  Blynk.run(); // Run Blink 
+  timer.run(); // Timer Run
 
-  Blynk.run();
-  timer.run();
-
-  delay(500);
+  delay(500); // Half second delay in reading and data send
 }
+
+
 
 void connectToWiFi() {
   Serial.print("Connecting to Wi-Fi");
 
-  WiFi.begin(ssid, pass);
-
+  WiFi.begin(ssid, pass);  //Attempt Connect to Wifi using previous declared WIFI Details
+                                              
   lcd.print("Connecting...");
-  while (WiFi.status() != WL_CONNECTED) {
+
+  while (WiFi.status() != WL_CONNECTED) {  //Attempt Wifi Connection every second
     
     Serial.print(".");
-    delay(1000);  // Adjust delay if needed
+    delay(1000);  
   }
 
-  Serial.println("\nConnected to Wi-Fi");
+  Serial.println("\nConnected to Wi-Fi");  // Serial to show succesful connection to WIFI
   lcd.clear();  // Clear the LCD screen
   
-  lcd.print("WiFi Connected");
+  lcd.print("WiFi Connected"); // LCD to show succesful connection to WIFI
 
-  if (Blynk.connected()) {
-    Serial.println("Connected to Blynk");
-    lcd.print("WiFi-Blynk Connected");
-  } else {
-    Serial.println("Not connected to Blynk");
-  }
 }
